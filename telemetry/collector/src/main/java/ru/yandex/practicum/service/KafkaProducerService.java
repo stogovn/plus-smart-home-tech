@@ -4,18 +4,26 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.kafka.telemetry.event.ActionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ClimateSensorAvro;
+import ru.yandex.practicum.kafka.telemetry.event.ConditionOperationAvro;
+import ru.yandex.practicum.kafka.telemetry.event.ConditionTypeAvro;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceActionAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceAddedEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceRemovedEventAvro;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.LightSensorAvro;
 import ru.yandex.practicum.kafka.telemetry.event.MotionSensorAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioAddedEventAvro;
+import ru.yandex.practicum.kafka.telemetry.event.ScenarioConditionAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioRemovedEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SwitchSensorAvro;
 import ru.yandex.practicum.kafka.telemetry.event.TemperatureSensorAvro;
+import ru.yandex.practicum.model.hub.DeviceAction;
 import ru.yandex.practicum.model.hub.DeviceAddedEvent;
 import ru.yandex.practicum.model.hub.DeviceRemovedEvent;
 import ru.yandex.practicum.model.hub.ScenarioAddedEvent;
+import ru.yandex.practicum.model.hub.ScenarioCondition;
 import ru.yandex.practicum.model.hub.ScenarioRemovedEvent;
 import ru.yandex.practicum.model.sensors.ClimateSensorEvent;
 import ru.yandex.practicum.model.sensors.LightSensorEvent;
@@ -24,6 +32,8 @@ import ru.yandex.practicum.model.sensors.SensorEvent;
 import ru.yandex.practicum.model.hub.HubEvent;
 import ru.yandex.practicum.model.sensors.SwitchSensorEvent;
 import ru.yandex.practicum.model.sensors.TemperatureSensorEvent;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -100,7 +110,7 @@ public class KafkaProducerService {
                 DeviceAddedEvent deviceAddedEvent = (DeviceAddedEvent) hubEvent;
                 DeviceAddedEventAvro deviceAddedEventAvro = DeviceAddedEventAvro.newBuilder()
                         .setId(deviceAddedEvent.getId())
-                        .setType(deviceAddedEvent.getDeviceType()) // предполагается, что тип совместим или требует конвертации
+                        .setType(DeviceTypeAvro.valueOf(deviceAddedEvent.getDeviceType().name()))
                         .build();
                 hubKafkaTemplate.send(hubEventTopic, hubEvent.getHubId(), deviceAddedEventAvro);
                 break;
@@ -115,10 +125,14 @@ public class KafkaProducerService {
             }
             case SCENARIO_ADDED: {
                 ScenarioAddedEvent scenarioAddedEvent = (ScenarioAddedEvent) hubEvent;
+                List<ScenarioConditionAvro> scenarioConditionAvroList = scenarioAddedEvent.getConditions().stream()
+                        .map(this::mapToAvroScenarioCondition).toList();
+                List<DeviceActionAvro> deviceActionAvroList = scenarioAddedEvent.getActions().stream()
+                        .map(this::mapToAvroDeviceAction).toList();
                 ScenarioAddedEventAvro scenarioAddedEventAvro = ScenarioAddedEventAvro.newBuilder()
                         .setName(scenarioAddedEvent.getName())
-                        .setActions(scenarioAddedEvent.getActions())
-                        .setConditions(scenarioAddedEvent.getConditions())
+                        .setActions(deviceActionAvroList)
+                        .setConditions(scenarioConditionAvroList)
                         .build();
                 hubKafkaTemplate.send(hubEventTopic, hubEvent.getHubId(), scenarioAddedEventAvro);
                 break;
@@ -134,5 +148,22 @@ public class KafkaProducerService {
             default:
                 throw new IllegalArgumentException("Unknown hub event type: " + hubEvent.getType());
         }
+    }
+
+    private ScenarioConditionAvro mapToAvroScenarioCondition(ScenarioCondition scenarioCondition) {
+        return ScenarioConditionAvro.newBuilder()
+                .setSensorId(scenarioCondition.getSensorId())
+                .setType(ConditionTypeAvro.valueOf(scenarioCondition.getType().name()))
+                .setOperation(ConditionOperationAvro.valueOf(scenarioCondition.getOperation().name()))
+                .setValue(scenarioCondition.getValue())
+                .build();
+    }
+
+    private DeviceActionAvro mapToAvroDeviceAction(DeviceAction deviceAction) {
+        return DeviceActionAvro.newBuilder()
+                .setSensorId(deviceAction.getSensorId())
+                .setType(ActionTypeAvro.valueOf(deviceAction.getType().name()))
+                .setValue(deviceAction.getValue())
+                .build();
     }
 }

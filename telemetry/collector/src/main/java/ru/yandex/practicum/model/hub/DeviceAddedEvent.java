@@ -1,10 +1,10 @@
 package ru.yandex.practicum.model.hub;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import ru.yandex.practicum.kafka.telemetry.event.DeviceTypeAvro;
 
 @Getter
 @Setter
@@ -13,8 +13,8 @@ public class DeviceAddedEvent extends HubEvent {
     @NotBlank
     private String id; // Идентификатор добавленного устройства
 
-    @NotBlank
-    private DeviceTypeAvro deviceType;
+    @NotNull
+    private DeviceType deviceType;
 
     @Override
     public HubEventType getType() {
