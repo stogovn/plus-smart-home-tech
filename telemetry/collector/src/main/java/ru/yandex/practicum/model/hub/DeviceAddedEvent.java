@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceTypeAvro;
 
 @Getter
 @Setter
@@ -13,7 +14,7 @@ public class DeviceAddedEvent extends HubEvent {
     private String id; // Идентификатор добавленного устройства
 
     @NotBlank
-    private DeviceType deviceType;
+    private DeviceTypeAvro deviceType;
 
     @Override
     public HubEventType getType() {

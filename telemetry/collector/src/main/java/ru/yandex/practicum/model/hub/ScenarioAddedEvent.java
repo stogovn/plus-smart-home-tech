@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceActionAvro;
+import ru.yandex.practicum.kafka.telemetry.event.ScenarioConditionAvro;
 
 import java.util.List;
 
@@ -16,9 +18,9 @@ public class ScenarioAddedEvent extends HubEvent {
     @Size(min = 3)
     private String name; // Название сценария
 
-    private List<ScenarioCondition> conditions;
+    private List<ScenarioConditionAvro> conditions;
 
-    private List<DeviceAction> actions;
+    private List<DeviceActionAvro> actions;
 
     @Override
     public HubEventType getType() {
