@@ -1,9 +1,12 @@
 package ru.yandex.practicum.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+import org.springframework.util.concurrent.ListenableFutureCallback;
 import ru.yandex.practicum.kafka.telemetry.event.ActionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ClimateSensorAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ConditionOperationAvro;
@@ -36,7 +39,9 @@ import ru.yandex.practicum.model.sensors.SwitchSensorEvent;
 import ru.yandex.practicum.model.sensors.TemperatureSensorEvent;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KafkaProducerService {
@@ -169,6 +174,7 @@ public class KafkaProducerService {
             }
             case SCENARIO_ADDED: {
                 ScenarioAddedEvent scenarioAddedEvent = (ScenarioAddedEvent) hubEvent;
+                log.info("Получено событие SCENARIO_ADDED: {}", scenarioAddedEvent);
                 List<ScenarioConditionAvro> avroConditions = scenarioAddedEvent.getConditions().stream()
                         .map(this::mapToAvroScenarioCondition)
                         .toList();
@@ -185,7 +191,16 @@ public class KafkaProducerService {
                         .setTimestamp(scenarioAddedEvent.getTimestamp())
                         .setPayload(scenarioAddedEventAvro)
                         .build();
-                hubKafkaTemplate.send(hubEventTopic, scenarioAddedEvent.getHubId(), hubEventAvro);
+                log.info("Отправляю HubEventAvro: {}", hubEventAvro);
+                CompletableFuture<SendResult<String, Object>> future =
+                        hubKafkaTemplate.send(hubEventTopic, scenarioAddedEvent.getHubId(), hubEventAvro);
+                future.whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Ошибка при отправке HubEventAvro для hub {}: ", scenarioAddedEvent.getHubId(), ex);
+                    } else {
+                        log.info("Сообщение HubEventAvro успешно отправлено. Метаданные: {}", result.getRecordMetadata());
+                    }
+                });
                 break;
             }
             case SCENARIO_REMOVED: {
