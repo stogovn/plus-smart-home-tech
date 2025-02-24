@@ -11,6 +11,7 @@ import ru.yandex.practicum.kafka.telemetry.event.ConditionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceActionAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceAddedEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceRemovedEventAvro;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.LightSensorAvro;
 import ru.yandex.practicum.kafka.telemetry.event.MotionSensorAvro;
@@ -143,11 +144,11 @@ public class KafkaProducerService {
                 DeviceAddedEvent deviceAddedEvent = (DeviceAddedEvent) hubEvent;
                 DeviceAddedEventAvro deviceAddedEventAvro = DeviceAddedEventAvro.newBuilder()
                         .setId(deviceAddedEvent.getId())
-                        .setType(ru.yandex.practicum.kafka.telemetry.event.DeviceTypeAvro.valueOf(deviceAddedEvent.getDeviceType().name()))
+                        .setType(DeviceTypeAvro.valueOf(deviceAddedEvent.getDeviceType().name()))
                         .build();
                 HubEventAvro hubEventAvro = HubEventAvro.newBuilder()
                         .setHubId(deviceAddedEvent.getHubId())
-                        .setTimestamp(deviceAddedEvent.getTimestamp().toEpochMilli())
+                        .setTimestamp(deviceAddedEvent.getTimestamp())
                         .setPayload(deviceAddedEventAvro)
                         .build();
                 hubKafkaTemplate.send(hubEventTopic, deviceAddedEvent.getHubId(), hubEventAvro);
@@ -160,7 +161,7 @@ public class KafkaProducerService {
                         .build();
                 HubEventAvro hubEventAvro = HubEventAvro.newBuilder()
                         .setHubId(deviceRemovedEvent.getHubId())
-                        .setTimestamp(deviceRemovedEvent.getTimestamp().toEpochMilli())
+                        .setTimestamp(deviceRemovedEvent.getTimestamp())
                         .setPayload(deviceRemovedEventAvro)
                         .build();
                 hubKafkaTemplate.send(hubEventTopic, deviceRemovedEvent.getHubId(), hubEventAvro);
@@ -181,7 +182,7 @@ public class KafkaProducerService {
                         .build();
                 HubEventAvro hubEventAvro = HubEventAvro.newBuilder()
                         .setHubId(scenarioAddedEvent.getHubId())
-                        .setTimestamp(scenarioAddedEvent.getTimestamp().toEpochMilli())
+                        .setTimestamp(scenarioAddedEvent.getTimestamp())
                         .setPayload(scenarioAddedEventAvro)
                         .build();
                 hubKafkaTemplate.send(hubEventTopic, scenarioAddedEvent.getHubId(), hubEventAvro);
@@ -194,7 +195,7 @@ public class KafkaProducerService {
                         .build();
                 HubEventAvro hubEventAvro = HubEventAvro.newBuilder()
                         .setHubId(scenarioRemovedEvent.getHubId())
-                        .setTimestamp(scenarioRemovedEvent.getTimestamp().toEpochMilli())
+                        .setTimestamp(scenarioRemovedEvent.getTimestamp())
                         .setPayload(scenarioRemovedEventAvro)
                         .build();
                 hubKafkaTemplate.send(hubEventTopic, scenarioRemovedEvent.getHubId(), hubEventAvro);
