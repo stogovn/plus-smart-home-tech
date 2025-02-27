@@ -125,3 +125,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# CkeckStyle files
+checkstyle.xml
+suppressions.xml
