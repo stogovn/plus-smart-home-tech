@@ -16,7 +16,7 @@ public class LightSensorEventConverter extends EventConverter<LightSensorEvent, 
         return SensorEventAvro.newBuilder()
                 .setId(event.getId())
                 .setHubId(event.getHubId())
-                .setTimestamp(event.getTimestamp().toEpochMilli())
+                .setTimestamp(event.getTimestamp())
                 .setPayload(lightAvro)
                 .build();
     }

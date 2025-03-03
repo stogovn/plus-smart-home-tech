@@ -19,7 +19,7 @@ public class TemperatureSensorEventConverter extends EventConverter<TemperatureS
         return SensorEventAvro.newBuilder()
                 .setId(event.getId())
                 .setHubId(event.getHubId())
-                .setTimestamp(event.getTimestamp().toEpochMilli())
+                .setTimestamp(event.getTimestamp())
                 .setPayload(tempAvro)
                 .build();
     }
