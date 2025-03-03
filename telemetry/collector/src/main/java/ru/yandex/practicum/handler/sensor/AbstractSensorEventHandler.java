@@ -1,6 +1,6 @@
 package ru.yandex.practicum.handler.sensor;
 
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -8,7 +8,7 @@ import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 
 @Slf4j
-@NoArgsConstructor(force = true)
+@RequiredArgsConstructor
 public abstract class AbstractSensorEventHandler implements SensorEventHandler {
 
     protected final KafkaTemplate<String, Object> sensorKafkaTemplate;

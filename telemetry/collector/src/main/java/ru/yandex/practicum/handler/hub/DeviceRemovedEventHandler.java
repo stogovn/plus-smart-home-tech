@@ -1,5 +1,6 @@
 package ru.yandex.practicum.handler.hub;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.telemetry.event.DeviceRemovedEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
@@ -10,6 +11,10 @@ import java.time.Instant;
 
 @Component
 public class DeviceRemovedEventHandler extends AbstractHubEventHandler {
+
+    public DeviceRemovedEventHandler(KafkaTemplate<String, Object> hubKafkaTemplate) {
+        super(hubKafkaTemplate);
+    }
 
     @Override
     public HubEventProto.PayloadCase getMessageType() {

@@ -1,5 +1,6 @@
 package ru.yandex.practicum.handler.hub;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.ScenarioRemovedEventProto;
@@ -10,6 +11,10 @@ import java.time.Instant;
 
 @Component
 public class ScenarioRemovedEventHandler extends AbstractHubEventHandler {
+    public ScenarioRemovedEventHandler(KafkaTemplate<String, Object> hubKafkaTemplate) {
+        super(hubKafkaTemplate);
+    }
+
     @Override
     public HubEventProto.PayloadCase getMessageType() {
         return HubEventProto.PayloadCase.SCENARIO_REMOVED;

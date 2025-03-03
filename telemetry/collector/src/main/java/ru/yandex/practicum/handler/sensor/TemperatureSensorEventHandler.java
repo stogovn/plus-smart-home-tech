@@ -1,5 +1,6 @@
 package ru.yandex.practicum.handler.sensor;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.TemperatureSensorProto;
@@ -10,6 +11,11 @@ import java.time.Instant;
 
 @Component
 public class TemperatureSensorEventHandler extends AbstractSensorEventHandler {
+
+    public TemperatureSensorEventHandler(KafkaTemplate<String, Object> sensorKafkaTemplate) {
+        super(sensorKafkaTemplate);
+    }
+
     @Override
     public SensorEventProto.PayloadCase getMessageType() {
         return SensorEventProto.PayloadCase.TEMPERATURE_SENSOR_EVENT;

@@ -1,5 +1,6 @@
 package ru.yandex.practicum.handler.hub;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.telemetry.event.DeviceActionProto;
 import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
@@ -18,6 +19,10 @@ import java.util.List;
 
 @Component
 public class ScenarioAddedEventHandler extends AbstractHubEventHandler {
+    public ScenarioAddedEventHandler(KafkaTemplate<String, Object> hubKafkaTemplate) {
+        super(hubKafkaTemplate);
+    }
+
     @Override
     public HubEventProto.PayloadCase getMessageType() {
         return HubEventProto.PayloadCase.SCENARIO_ADDED;
