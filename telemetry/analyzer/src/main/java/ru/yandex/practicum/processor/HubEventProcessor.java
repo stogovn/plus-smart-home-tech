@@ -30,24 +30,42 @@ public class HubEventProcessor implements Runnable {
 
     @Override
     public void run() {
-        try (KafkaConsumer<Void, HubEventAvro> consumer = new KafkaConsumer<>(
-                kafkaProperties.getHubEventProperties())) {
-            Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
+        log.info("HubEventProcessor запущен. Подписываемся на топик: {}", topic);
+        try (KafkaConsumer<Void, HubEventAvro> consumer = new KafkaConsumer<>(kafkaProperties.getHubEventProperties())) {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                log.info("Получен сигнал завершения работы, вызываем wakeup() у consumer.");
+                consumer.wakeup();
+            }));
 
             consumer.subscribe(List.of(topic));
+            log.info("Подписка на топик {} выполнена.", topic);
 
             while (true) {
                 ConsumerRecords<Void, HubEventAvro> records = consumer.poll(
                         Duration.ofMillis(kafkaProperties.getConsumeAttemptTimeout()));
+                log.debug("Получено {} записей", records.count());
+
                 if (!records.isEmpty()) {
                     for (ConsumerRecord<Void, HubEventAvro> record : records) {
-                        hubService.process(record.value());
+                        log.debug("Обработка записи: partition={}, offset={}, value={}",
+                                record.partition(), record.offset(), record.value());
+                        try {
+                            hubService.process(record.value());
+                            log.debug("Запись с offset {} успешно обработана", record.offset());
+                        } catch (Exception ex) {
+                            log.error("Ошибка обработки записи на offset {}: {}", record.offset(), ex.getMessage(), ex);
+                        }
                     }
+                } else {
+                    log.debug("В текущем цикле опроса записей не найдено.");
                 }
             }
-        } catch (WakeupException ignored) {
+        } catch (WakeupException e) {
+            log.info("WakeupException получен — завершаем работу consumer.");
         } catch (Exception e) {
             log.error("Ошибка во время обработки событий хаба", e);
+        } finally {
+            log.info("HubEventProcessor завершил работу.");
         }
     }
 }

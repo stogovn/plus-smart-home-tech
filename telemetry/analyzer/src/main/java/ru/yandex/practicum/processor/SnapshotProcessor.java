@@ -30,21 +30,22 @@ public class SnapshotProcessor implements Runnable {
 
     @Override
     public void run() {
-        try (KafkaConsumer<Void, SensorsSnapshotAvro> consumer = new KafkaConsumer<>(
-                kafkaProperties.getSnapshotsProperties())) {
+        try (KafkaConsumer<Void, SensorsSnapshotAvro> consumer = new KafkaConsumer<>(kafkaProperties.getSnapshotsProperties())) {
             Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
-
             consumer.subscribe(List.of(topic));
+            log.info("Подписка на топик снапшотов: {}", topic);
 
             while (true) {
-                ConsumerRecords<Void, SensorsSnapshotAvro> records = consumer.poll(
-                        Duration.ofMillis(kafkaProperties.getConsumeAttemptTimeout()));
+                ConsumerRecords<Void, SensorsSnapshotAvro> records = consumer.poll(Duration.ofMillis(kafkaProperties.getConsumeAttemptTimeout()));
                 if (!records.isEmpty()) {
+                    log.info("Получено {} снапшотов", records.count());
                     for (ConsumerRecord<Void, SensorsSnapshotAvro> record : records) {
+                        log.debug("Обрабатываем снапшот: key={}, value={}", record.key(), record.value());
                         hubService.process(record.value());
                     }
+                    consumer.commitSync();
+                    log.info("Оффсеты коммитнуты");
                 }
-                consumer.commitSync();
             }
         } catch (WakeupException ignored) {
         } catch (Exception e) {
