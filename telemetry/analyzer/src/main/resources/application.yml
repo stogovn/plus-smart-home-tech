@@ -35,3 +35,7 @@ kafka:
       name: telemetry.hubs.v1
     snapshot:
       name: telemetry.snapshots.v1
+
+logging:
+  level:
+    ru.yandex.practicum.analyzer: DEBUG

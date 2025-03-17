@@ -8,8 +8,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import ru.yandex.practicum.serialization.HubEventDeserializer;
 import ru.yandex.practicum.serialization.SensorsSnapshotDeserializer;
-import ru.yandex.practicum.serialization.SpecificRecordBaseDeserializer;
 
 import java.util.Properties;
 
@@ -39,7 +39,7 @@ public class KafkaProperties {
         hubEventProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
         hubEventProperties.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, autoCommitIntervalMs);
         hubEventProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, VoidDeserializer.class);
-        hubEventProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, SpecificRecordBaseDeserializer.class);
+        hubEventProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, HubEventDeserializer.class);
         hubEventProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "hub");
 
         //snapshotEvent

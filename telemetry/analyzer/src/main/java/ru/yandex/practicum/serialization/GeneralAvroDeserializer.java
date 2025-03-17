@@ -15,7 +15,7 @@ public abstract class GeneralAvroDeserializer<T extends SpecificRecordBase> impl
 
     protected final Class<T> targetType;
 
-    public GeneralAvroDeserializer(Class<T> targetType) {
+    protected GeneralAvroDeserializer(Class<T> targetType) {
         this.targetType = targetType;
     }
 
