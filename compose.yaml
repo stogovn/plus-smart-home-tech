@@ -4,10 +4,8 @@ services:
     hostname: kafka
     container_name: kafka
     ports:
-      - "9092:9092"      # для клиентских подключений (PLAINTEXT_HOST)
-      - "29092:29092"    # для внутренних подключений (PLAINTEXT)
-      - "29093:29093"    # для контроллера (CONTROLLER)
-      - "9101:9101"      # JMX
+      - "9092:9092" # for client connections
+      - "9101:9101" # JMX
     restart: unless-stopped
     environment:
       KAFKA_NODE_ID: 1
@@ -16,13 +14,13 @@ services:
       KAFKA_JMX_HOSTNAME: localhost
       KAFKA_PROCESS_ROLES: 'broker,controller'
       KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
       CLUSTER_ID: 'K0EA9p0yEe6MkAAAAkKsEg'
     healthcheck:
-        test: [ "CMD", "nc", "-z", "localhost", "9092" ]
-        interval: 10s
-        timeout: 5s
-        retries: 5
+      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka-init-topics:
     image: confluentinc/confluent-local:7.4.3
