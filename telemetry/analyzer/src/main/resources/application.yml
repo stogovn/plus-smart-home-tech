@@ -8,6 +8,7 @@ grpc:
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
+      deadline: 10s
 
 
 spring:
