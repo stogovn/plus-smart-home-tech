@@ -27,7 +27,7 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 kafka:
-  bootstrapServers: kafka:29092
+  bootstrapServers: localhost:9092
   commit: 10000
   consumeAttemptTimeout: 2000
   topic:
