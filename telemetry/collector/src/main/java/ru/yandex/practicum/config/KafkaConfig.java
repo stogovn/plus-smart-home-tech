@@ -9,6 +9,9 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.ProducerFactory;
 
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import ru.yandex.practicum.service.AvroSerializer;
 
 import java.util.HashMap;
@@ -33,6 +36,23 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
         configProps.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 60000);
         return configProps;
+    }
+
+    @Bean
+    public RetryTemplate retryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+
+        // Политика ожидания между попытками: фиксированное ожидание 100 мс
+        FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+        backOffPolicy.setBackOffPeriod(100);
+        retryTemplate.setBackOffPolicy(backOffPolicy);
+
+        // Политика повтора: максимум 5 попыток
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(5);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        return retryTemplate;
     }
 
     @Bean
