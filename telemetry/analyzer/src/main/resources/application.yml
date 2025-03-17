@@ -27,7 +27,7 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 kafka:
-  bootstrapServers: localhost:9092
+  bootstrapServers: kafka:29092
   commit: 10000
   consumeAttemptTimeout: 2000
   topic:
@@ -35,7 +35,3 @@ kafka:
       name: telemetry.hubs.v1
     snapshot:
       name: telemetry.snapshots.v1
-
-logging:
-  level:
-    ru.yandex.practicum.analyzer: DEBUG

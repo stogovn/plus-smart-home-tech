@@ -55,15 +55,29 @@ public class SnapshotService implements HubService<SensorsSnapshotAvro> {
 
     @Override
     public void process(SensorsSnapshotAvro event) {
+        log.info("Начата обработка снапшота для хаба: {}", event.getHubId());
+        // Получаем сенсоры по хабу
         List<Sensor> sensors = sensorPersister.getSensorsByHubId(event.getHubId());
-        String processedSensorId = getProcessedSensorId(sensors, event.getSensorsState());
-        SensorStateAvro sensorStateAvro = event.getSensorsState().values().stream().findFirst().orElseThrow();
-        List<ScenarioAction> scenarioActions = scenarioActionPersister.getScenarioActionsBySensorId(
-                processedSensorId);
-        Map<Long, ScenarioCondition> scenarioConditions = scenarioConditionPersister.getScenarioConditionsBySensorId(
-                        processedSensorId).stream()
-                .collect(Collectors.toMap(it -> it.getScenario().getId(), Function.identity()));
+        log.debug("Найдено {} сенсоров для хаба {}", sensors.size(), event.getHubId());
 
+        // Определяем, какой сенсор из состояния снапшота обработать
+        String processedSensorId = getProcessedSensorId(sensors, event.getSensorsState());
+        log.debug("Обрабатываем сенсор с идентификатором: {}", processedSensorId);
+
+        // Извлекаем состояние сенсора (первый найденный)
+        SensorStateAvro sensorStateAvro = event.getSensorsState().values().stream().findFirst()
+                .orElseThrow(() -> new RuntimeException("Нет состояния сенсора в снапшоте"));
+        log.debug("Получено состояние сенсора: {}", sensorStateAvro);
+
+        // Получаем сценарии для сенсора
+        List<ScenarioAction> scenarioActions = scenarioActionPersister.getScenarioActionsBySensorId(processedSensorId);
+        log.debug("Найдено {} сценарных действий для сенсора {}", scenarioActions.size(), processedSensorId);
+
+        Map<Long, ScenarioCondition> scenarioConditions = scenarioConditionPersister.getScenarioConditionsBySensorId(processedSensorId).stream()
+                .collect(Collectors.toMap(it -> it.getScenario().getId(), Function.identity()));
+        log.debug("Найдено {} условий сценариев для сенсора {}", scenarioConditions.size(), processedSensorId);
+
+        // Построение DTO для сценарных действий
         List<ScenarioActionConditionDto> dtos = scenarioActions.stream()
                 .map(scenarioAction -> {
                     ScenarioActionConditionDto dto = new ScenarioActionConditionDto();
@@ -72,31 +86,45 @@ public class SnapshotService implements HubService<SensorsSnapshotAvro> {
                     dto.setScenario(scenarioAction.getScenario());
                     dto.setCondition(scenarioConditions.get(scenarioAction.getScenario().getId()).getCondition());
                     return dto;
-                }).toList();
+                })
+                .toList();
+        log.info("DTO для сценариев сформированы. Количество DTO: {}", dtos.size());
 
+        // Определяем тип данных и вызываем соответствующий builder
         Object data = sensorStateAvro.getData();
-        if (data instanceof ClimateSensorAvro climateSensorAvro) {
-            List<DeviceActionRequest> requests = climateSensorDeviceActionBuilder.build(climateSensorAvro, dtos);
-            handleDeviceAction(requests);
+        switch (data) {
+            case ClimateSensorAvro climateSensorAvro -> {
+                log.info("Обработка данных климатического сенсора");
+                List<DeviceActionRequest> requests = climateSensorDeviceActionBuilder.build(climateSensorAvro, dtos);
+                log.debug("Сформировано {} команд для климатического сенсора", requests.size());
+                handleDeviceAction(requests);
+            }
+            case LightSensorAvro lightSensorAvro -> {
+                log.info("Обработка данных сенсора освещенности");
+                List<DeviceActionRequest> requests = lightSensorDeviceActionBuilder.build(lightSensorAvro, dtos);
+                log.debug("Сформировано {} команд для сенсора освещенности", requests.size());
+                handleDeviceAction(requests);
+            }
+            case MotionSensorAvro motionSensorAvro -> {
+                log.info("Обработка данных сенсора движения");
+                List<DeviceActionRequest> requests = motionSensorDeviceActionBuilder.build(motionSensorAvro, dtos);
+                log.debug("Сформировано {} команд для сенсора движения", requests.size());
+                handleDeviceAction(requests);
+            }
+            case SwitchSensorAvro switchSensorAvro -> {
+                log.info("Обработка данных сенсора переключателя");
+                List<DeviceActionRequest> requests = switchSensorDeviceActionBuilder.build(switchSensorAvro, dtos);
+                log.debug("Сформировано {} команд для сенсора переключателя", requests.size());
+                handleDeviceAction(requests);
+            }
+            case TemperatureSensorAvro temperatureSensorAvro -> {
+                log.info("Обработка данных температурного сенсора");
+                List<DeviceActionRequest> requests = temperatureSensorDeviceActionBuilder.build(temperatureSensorAvro, dtos);
+                log.debug("Сформировано {} команд для температурного сенсора", requests.size());
+                handleDeviceAction(requests);
+            }
+            case null, default -> log.warn("Тип данных сенсора не определён: {}", data.getClass().getName());
         }
-        if (data instanceof LightSensorAvro lightSensorAvro) {
-            List<DeviceActionRequest> requests = lightSensorDeviceActionBuilder.build(lightSensorAvro, dtos);
-            handleDeviceAction(requests);
-        }
-        if (data instanceof MotionSensorAvro motionSensorAvro) {
-            List<DeviceActionRequest> requests = motionSensorDeviceActionBuilder.build(motionSensorAvro, dtos);
-            handleDeviceAction(requests);
-        }
-        if (data instanceof SwitchSensorAvro switchSensorAvro) {
-            List<DeviceActionRequest> requests = switchSensorDeviceActionBuilder.build(switchSensorAvro, dtos);
-            handleDeviceAction(requests);
-        }
-        if (data instanceof TemperatureSensorAvro temperatureSensorAvro) {
-            List<DeviceActionRequest> requests = temperatureSensorDeviceActionBuilder.build(temperatureSensorAvro,
-                    dtos);
-            handleDeviceAction(requests);
-        }
-
     }
 
     private String getProcessedSensorId(List<Sensor> sensors, Map<String, SensorStateAvro> sensorsState) {
@@ -105,20 +133,30 @@ public class SnapshotService implements HubService<SensorsSnapshotAvro> {
             sensors.forEach(it -> {
                 if (sensorsState.containsKey(it.getId())) {
                     sensorId.set(it.getId());
-                    return;
+                    log.debug("Сенсор {} найден в состоянии снапшота", it.getId());
+                } else {
+                    log.warn("Сенсор {} отсутствует в состоянии снапшота", it.getId());
                 }
-                throw new RuntimeException("Не могу найти сенсор с идентификатором " + it.getId());
             });
         } catch (Exception e) {
-            log.error("не найден сенсор для обработки снапшота", e);
+            log.error("Не найден сенсор для обработки снапшота", e);
         }
         return sensorId.get();
     }
 
     private void handleDeviceAction(List<DeviceActionRequest> requests) {
         if (requests.isEmpty()) {
+            log.debug("Нет сформированных команд для отправки в Hub Router");
             return;
         }
-        requests.forEach(hubRouter::handleDeviceAction);
+        requests.forEach(request -> {
+            log.info("Отправка команды в Hub Router: {}", request);
+            try {
+                var response = hubRouter.handleDeviceAction(request);
+                log.debug("Команда успешно отправлена: {}. Ответ: {}", request, response);
+            } catch (Exception ex) {
+                log.error("Ошибка при отправке команды: {}. Ошибка: {}", request, ex.getMessage(), ex);
+            }
+        });
     }
 }
