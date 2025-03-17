@@ -1,68 +1,53 @@
 package ru.yandex.practicum.processor;
 
-import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.config.KafkaProperties;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
+import ru.yandex.practicum.service.HubService;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class HubEventProcessor implements Runnable {
-    private final KafkaConsumer<String, HubEventAvro> consumer;
 
-    @Value("${hubEventTopic}")
-    private String hubEventTopic;
+    @Qualifier("eventService")
+    private final HubService<HubEventAvro> hubService;
+    private final KafkaProperties kafkaProperties;
 
-
-    public HubEventProcessor(KafkaConsumer<String, HubEventAvro> consumer) {
-        this.consumer = consumer;
-    }
-
-    @PostConstruct
-    public void init() {
-
-        Thread processorThread = new Thread(this, "HubEventProcessorThread");
-        processorThread.start();
-        log.info("HubEventProcessor запущен в отдельном потоке.");
-    }
+    @Value("${kafka.topic.hub.name}")
+    private String topic;
 
     @Override
     public void run() {
-        try {
-            // Подписываемся на топик с событиями от хаба
-            consumer.subscribe(Collections.singletonList(hubEventTopic));
-            log.info("Подписка на топик {}", hubEventTopic);
-            while (!Thread.currentThread().isInterrupted()) {
-                // Опрос топика каждые 1 секунду
-                ConsumerRecords<String, HubEventAvro> records = consumer.poll(Duration.ofSeconds(1));
-                for (ConsumerRecord<String, HubEventAvro> record : records) {
-                    HubEventAvro event = record.value();
-                    log.info("Получено событие из Kafka: {}", event);
-                    processHubEvent(event);
+        try (KafkaConsumer<Void, HubEventAvro> consumer = new KafkaConsumer<>(
+                kafkaProperties.getHubEventProperties())) {
+            Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
+
+            consumer.subscribe(List.of(topic));
+
+            while (true) {
+                ConsumerRecords<Void, HubEventAvro> records = consumer.poll(
+                        Duration.ofMillis(kafkaProperties.getConsumeAttemptTimeout()));
+                if (!records.isEmpty()) {
+                    for (ConsumerRecord<Void, HubEventAvro> record : records) {
+                        hubService.process(record.value());
+                    }
                 }
-                // Фиксируем оффсеты после обработки записей
-                consumer.commitSync();
             }
+        } catch (WakeupException ignored) {
         } catch (Exception e) {
-            log.error("Ошибка в цикле опроса HubEventProcessor", e);
-        } finally {
-            consumer.close();
-            log.info("Kafka consumer закрыт.");
+            log.error("Ошибка во время обработки событий хаба", e);
         }
-    }
-
-    /**
-     * Метод обработки события HubEventAvro.
-     */
-    private void processHubEvent(HubEventAvro event) {
-        log.info("Обработка события HubEventAvro: {}", event);
-
     }
 }

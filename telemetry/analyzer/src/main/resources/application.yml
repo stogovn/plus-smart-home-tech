@@ -1,0 +1,36 @@
+server:
+  port: 8081
+
+grpc:
+  client:
+    hub-router:
+      address: 'static://localhost:59090'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+kafka:
+  bootstrapServers: localhost:9092
+  commit: 10000
+  consumeAttemptTimeout: 2000
+  topic:
+    hub:
+      name: telemetry.hubs.v1
+    snapshot:
+      name: telemetry.snapshots.v1
