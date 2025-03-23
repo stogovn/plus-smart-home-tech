@@ -1,36 +1,36 @@
 package ru.yandex.practicum.model;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.FieldDefaults;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceActionTypeAvro;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-@Setter
-@Getter
 @Entity
 @Table(name = "actions")
+@Getter
+@Setter
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Action {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "id", nullable = false)
-    private Long id;
-
-    @Column(name = "type", length = Integer.MAX_VALUE)
-    private String type;
-
-    @Column(name = "value")
-    private Integer value;
-
-    @OneToMany(mappedBy = "action")
-    private Set<ScenarioAction> scenarioActions = new LinkedHashSet<>();
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+    @Enumerated(EnumType.STRING)
+    DeviceActionTypeAvro type;
+    Integer value;
 }

@@ -5,6 +5,5 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.model.Condition;
 
 @Repository
-public interface ConditionRepository extends JpaRepository<Condition,Long> {
-
+public interface ConditionRepository extends JpaRepository<Condition, Long> {
 }

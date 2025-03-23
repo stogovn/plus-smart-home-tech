@@ -6,10 +6,10 @@ import ru.yandex.practicum.grpc.telemetry.event.DeviceActionProto;
 import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.ScenarioAddedEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.ScenarioConditionProto;
-import ru.yandex.practicum.kafka.telemetry.event.ActionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ConditionOperationAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ConditionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceActionAvro;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceActionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioAddedEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioConditionAvro;
@@ -66,7 +66,7 @@ public class ScenarioAddedEventHandler extends AbstractHubEventHandler {
     private DeviceActionAvro mapToAvroDeviceAction(DeviceActionProto deviceActionProto) {
         return DeviceActionAvro.newBuilder()
                 .setSensorId(deviceActionProto.getSensorId())
-                .setType(ActionTypeAvro.valueOf(deviceActionProto.getType().name()))
+                .setType(DeviceActionTypeAvro.valueOf(deviceActionProto.getType().name()))
                 .setValue(deviceActionProto.getValue())
                 .build();
     }

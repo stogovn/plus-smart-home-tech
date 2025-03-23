@@ -3,31 +3,26 @@ package ru.yandex.practicum.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
+import lombok.ToString;
+import lombok.experimental.FieldDefaults;
 
 @Entity
+@Table(name = "sensors")
 @Getter
 @Setter
-@Table(name = "sensors")
+@ToString
+@AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Sensor {
-
     @Id
-    @Column(name = "id", nullable = false, length = Integer.MAX_VALUE)
-    private String id;
-
-    @Column(name = "hub_id", length = Integer.MAX_VALUE)
-    private String hubId;
-
-    @OneToMany(mappedBy = "sensor")
-    private Set<ScenarioAction> scenarioActions = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "sensor")
-    private Set<ScenarioCondition> scenarioConditions = new LinkedHashSet<>();
-
+    String id;
+    @Column(name = "hub_id")
+    String hubId;
 }

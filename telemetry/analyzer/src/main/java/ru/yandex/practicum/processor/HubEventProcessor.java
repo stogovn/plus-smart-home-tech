@@ -2,70 +2,87 @@ package ru.yandex.practicum.processor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.config.KafkaProperties;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
-import ru.yandex.practicum.service.HubService;
+import ru.yandex.practicum.service.HubEventService;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class HubEventProcessor implements Runnable {
+    @Value("${kafka.hub-consumer.attempt-timeout}")
+    int attemptTimeout;
+    @Value("${kafka.hub-consumer.topics}")
+    String topicTelemetryHubs;
 
-    @Qualifier("eventService")
-    private final HubService<HubEventAvro> hubService;
-    private final KafkaProperties kafkaProperties;
-
-    @Value("${kafka.topic.hub.name}")
-    private String topic;
+    private final KafkaConsumer<String, HubEventAvro> consumer;
+    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
+    private final HubEventService service;
 
     @Override
     public void run() {
-        log.info("HubEventProcessor запущен. Подписываемся на топик: {}", topic);
-        try (KafkaConsumer<Void, HubEventAvro> consumer = new KafkaConsumer<>(kafkaProperties.getHubEventProperties())) {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                log.info("Получен сигнал завершения работы, вызываем wakeup() у consumer.");
-                consumer.wakeup();
-            }));
-
-            consumer.subscribe(List.of(topic));
-            log.info("Подписка на топик {} выполнена.", topic);
-
+        Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
+        try {
+            consumer.subscribe(List.of(topicTelemetryHubs));
             while (true) {
-                ConsumerRecords<Void, HubEventAvro> records = consumer.poll(
-                        Duration.ofMillis(kafkaProperties.getConsumeAttemptTimeout()));
-                log.debug("Получено {} записей", records.count());
-
-                if (!records.isEmpty()) {
-                    for (ConsumerRecord<Void, HubEventAvro> record : records) {
-                        log.debug("Обработка записи: partition={}, offset={}, value={}",
-                                record.partition(), record.offset(), record.value());
-                        try {
-                            hubService.process(record.value());
-                            log.debug("Запись с offset {} успешно обработана", record.offset());
-                        } catch (Exception ex) {
-                            log.error("Ошибка обработки записи на offset {}: {}", record.offset(), ex.getMessage(), ex);
-                        }
-                    }
-                } else {
-                    log.debug("В текущем цикле опроса записей не найдено.");
+                ConsumerRecords<String, HubEventAvro> records = consumer.poll(Duration.ofMillis(attemptTimeout));
+                int count = 0;
+                for (ConsumerRecord<String, HubEventAvro> record : records) {
+                    handleRecord(record);
+                    manageOffsets(record, count, consumer);
+                    count++;
                 }
+                consumer.commitAsync();
             }
-        } catch (WakeupException e) {
-            log.info("WakeupException получен — завершаем работу consumer.");
+
+        } catch (WakeupException ignores) {
+
         } catch (Exception e) {
-            log.error("Ошибка во время обработки событий хаба", e);
+            log.warn("HubEvent processor have got an error", e);
         } finally {
-            log.info("HubEventProcessor завершил работу.");
+
+            try {
+                consumer.commitSync(currentOffsets);
+
+            } finally {
+                log.info("HubEvent consumer is closing");
+                consumer.close();
+            }
+        }
+    }
+
+    private void handleRecord(ConsumerRecord<String, HubEventAvro> consumerRecord) throws InterruptedException {
+        log.info("handleRecord {}", consumerRecord);
+        service.process(consumerRecord.value());
+    }
+
+    private void manageOffsets(ConsumerRecord<String, HubEventAvro> consumerRecord,
+                               int count,
+                               Consumer<String, HubEventAvro> consumer) {
+        currentOffsets.put(
+                new TopicPartition(consumerRecord.topic(), consumerRecord.partition()),
+                new OffsetAndMetadata(consumerRecord.offset() + 1)
+        );
+
+        if (count % 10 == 0) {
+            consumer.commitAsync(currentOffsets, (offsets, exception) -> {
+                if (exception != null) {
+                    log.warn("Error while fixing offsets: {}", offsets, exception);
+                }
+            });
         }
     }
 }
