@@ -24,7 +24,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class AggregationStarter {
-    private Duration consumeAttemptTimeout = Duration.ofMillis(1000);
+    private final Duration consumeAttemptTimeout = Duration.ofMillis(1000);
     @Value("${topic.telemetry.sensors}")
     private String topicTelemetrySensors;
     @Value("${topic.telemetry.snapshots}")
@@ -32,7 +32,7 @@ public class AggregationStarter {
 
     private final KafkaConsumer<String, SensorEventAvro> kafkaConsumer;
     private final KafkaProducer<String, SensorsSnapshotAvro> kafkaProducer;
-    private Map<String, SensorsSnapshotAvro> snapshots = new HashMap<>();
+    private final Map<String, SensorsSnapshotAvro> snapshots = new HashMap<>();
 
     public void start() {
         try {

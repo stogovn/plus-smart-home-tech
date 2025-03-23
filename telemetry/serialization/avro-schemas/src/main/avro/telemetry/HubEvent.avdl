@@ -24,7 +24,7 @@ protocol HubEventProtocol {
 		LOWER_THAN
 	}
 
-	enum ActionTypeAvro {
+	enum DeviceActionTypeAvro {
 		ACTIVATE,
 		DEACTIVATE,
 		INVERSE,
@@ -44,12 +44,12 @@ protocol HubEventProtocol {
 		string sensor_id;
 		ConditionTypeAvro type;
 		ConditionOperationAvro operation;
-		union { null, int, boolean } value = null;
+		union {null, int, boolean} value = null;
 	}
 
 	record DeviceActionAvro {
 		string sensor_id;
-		ActionTypeAvro type;
+		DeviceActionTypeAvro type;
 		int? value = null;
 	}
 

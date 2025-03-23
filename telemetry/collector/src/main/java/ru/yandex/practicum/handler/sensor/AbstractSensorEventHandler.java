@@ -25,7 +25,10 @@ public abstract class AbstractSensorEventHandler implements SensorEventHandler {
     public void handle(SensorEventProto eventProto) {
         SensorEventAvro avroEvent = mapToAvro(eventProto);
         log.info("Отправляю Avro-событие в Kafka: {}", avroEvent);
-        assert sensorKafkaTemplate != null;
-        sensorKafkaTemplate.send(topic, avroEvent.getHubId(), avroEvent);
+        try {
+            sensorKafkaTemplate.send(topic, avroEvent.getHubId(), avroEvent).get();
+        } catch (Exception e) {
+            log.error("Ошибка при отправке в Kafka", e);
+        }
     }
 }

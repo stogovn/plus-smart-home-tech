@@ -1,9 +1,9 @@
 package ru.yandex.practicum.service.converter.hub;
 
-import ru.yandex.practicum.kafka.telemetry.event.ActionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ConditionOperationAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ConditionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceActionAvro;
+import ru.yandex.practicum.kafka.telemetry.event.DeviceActionTypeAvro;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioAddedEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioConditionAvro;
@@ -48,7 +48,7 @@ public class ScenarioAddedEventConverter extends EventConverter<ScenarioAddedEve
     private DeviceActionAvro mapToAvroDeviceAction(DeviceAction action) {
         return DeviceActionAvro.newBuilder()
                 .setSensorId(action.getSensorId())
-                .setType(ActionTypeAvro.valueOf(action.getType().name()))
+                .setType(DeviceActionTypeAvro.valueOf(action.getType().name()))
                 .setValue(action.getValue())
                 .build();
     }
