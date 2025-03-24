@@ -40,6 +40,7 @@ public class Scenario {
 
     String name;
 
+    @ToString.Exclude
     @MapKeyColumn(name = "sensor_id")
     @JoinTable(name = "scenario_conditions",
             joinColumns = @JoinColumn(name = "scenario_id"),
@@ -48,6 +49,7 @@ public class Scenario {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     Map<String, Condition> conditions;
 
+    @ToString.Exclude
     @MapKeyColumn(name = "sensor_id")
     @JoinTable(name = "scenario_actions",
             joinColumns = @JoinColumn(name = "scenario_id"),
