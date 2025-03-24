@@ -2,6 +2,7 @@ package ru.yandex.practicum.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.kafka.telemetry.event.ConditionOperationAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorStateAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
@@ -35,6 +36,7 @@ public class AnalyzerServiceImpl implements AnalyzerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Scenario> getScenariosBySnapshot(SensorsSnapshotAvro sensorsSnapshotAvro) {
         if (sensorsSnapshotAvro == null) {
             log.warn("SensorsSnapshotAvro is null");
