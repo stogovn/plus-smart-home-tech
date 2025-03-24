@@ -37,21 +37,22 @@ public class Scenario {
 
     @Column(name = "hub_id")
     String hubId;
+
     String name;
 
-    @MapKeyColumn(table = "scenario_conditions", name = "sensor_id")
+    @MapKeyColumn(name = "sensor_id")
     @JoinTable(name = "scenario_conditions",
             joinColumns = @JoinColumn(name = "scenario_id"),
             inverseJoinColumns = @JoinColumn(name = "condition_id")
     )
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     Map<String, Condition> conditions;
 
-    @MapKeyColumn(table = "scenario_actions", name = "sensor_id")
+    @MapKeyColumn(name = "sensor_id")
     @JoinTable(name = "scenario_actions",
             joinColumns = @JoinColumn(name = "scenario_id"),
             inverseJoinColumns = @JoinColumn(name = "action_id")
     )
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     Map<String, Action> actions;
 }

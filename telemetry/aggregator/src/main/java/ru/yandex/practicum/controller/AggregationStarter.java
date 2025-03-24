@@ -35,17 +35,21 @@ public class AggregationStarter {
     private final Map<String, SensorsSnapshotAvro> snapshots = new HashMap<>();
 
     public void start() {
+        log.info("AggregationStarter запущен. Подписываемся на топик: {}", topicTelemetrySensors);
         try {
             kafkaConsumer.subscribe(List.of(topicTelemetrySensors));
+            log.info("Подписка на топик {} выполнена.", topicTelemetrySensors);
 
             while (true) {
                 ConsumerRecords<String, SensorEventAvro> records = kafkaConsumer.poll(consumeAttemptTimeout);
+                log.debug("Получено {} записей", records.count());
 
                 for (ConsumerRecord<String, SensorEventAvro> record : records) {
-                    log.info("== Polling cycle iteration on records. Partition = {}, Offset = {}", record.partition(), record.offset());
+                    log.info("Обработка записи. Partition = {}, Offset = {}", record.partition(), record.offset());
                     SensorEventAvro event = record.value();
-                    Optional<SensorsSnapshotAvro> sensorsSnapshotAvro = updateState(event);
+                    log.debug("Получено событие: {}", event);
 
+                    Optional<SensorsSnapshotAvro> sensorsSnapshotAvro = updateState(event);
                     if (sensorsSnapshotAvro.isPresent()) {
                         SensorsSnapshotAvro snapshotAvro = sensorsSnapshotAvro.get();
                         ProducerRecord<String, SensorsSnapshotAvro> producerRecord =
@@ -54,25 +58,42 @@ public class AggregationStarter {
                                         snapshotAvro.getTimestamp().toEpochMilli(),
                                         snapshotAvro.getHubId(),
                                         snapshotAvro);
-                        kafkaProducer.send(producerRecord);
-                        log.info("<== Has been sent on topic {} partition {} - the snapshotAvro {}", topicTelemetrySnapshots, producerRecord.partition(), snapshotAvro);
+                        kafkaProducer.send(producerRecord, (metadata, exception) -> {
+                            if (exception == null) {
+                                log.info("Снимок отправлен: topic={}, partition={}, offset={}",
+                                        metadata.topic(), metadata.partition(), metadata.offset());
+                            } else {
+                                log.error("Ошибка отправки снимка: {}", exception.getMessage(), exception);
+                            }
+                        });
+                    } else {
+                        log.debug("Для события с Offset {} не требуется обновление состояния", record.offset());
                     }
                 }
-                kafkaConsumer.commitAsync();
+                try {
+                    kafkaConsumer.commitSync();
+                    log.debug("Оффсеты успешно зафиксированы после обработки партии сообщений.");
+                } catch (Exception commitEx) {
+                    log.error("Ошибка фиксации оффсетов: {}", commitEx.getMessage(), commitEx);
+                }
             }
 
-        } catch (WakeupException ignored) {
-
+        } catch (WakeupException e) {
+            log.info("Получен WakeupException — завершаем работу consumer.");
         } catch (Exception e) {
-            log.warn("Sensor events have got an error", e);
+            log.error("Ошибка при обработке sensor events: {}", e.getMessage(), e);
         } finally {
             try {
+                log.info("Финализация: ожидание завершения отправки сообщений producer...");
                 kafkaProducer.flush();
+                log.info("Фиксация оффсетов при завершении работы.");
                 kafkaConsumer.commitSync();
+            } catch (Exception finalEx) {
+                log.error("Ошибка при финальной фиксации оффсетов: {}", finalEx.getMessage(), finalEx);
             } finally {
-                log.info("Consumer is closing");
+                log.info("Закрытие consumer...");
                 kafkaConsumer.close();
-                log.info("Producer is closing");
+                log.info("Закрытие producer...");
                 kafkaProducer.close();
             }
         }
@@ -81,7 +102,6 @@ public class AggregationStarter {
     private Optional<SensorsSnapshotAvro> updateState(SensorEventAvro event) {
         log.info("==> Update state for event: {}", event);
 
-        SensorsSnapshotAvro snapshotAvro;
         String hubId = event.getHubId();
         String eventId = event.getId();
 
