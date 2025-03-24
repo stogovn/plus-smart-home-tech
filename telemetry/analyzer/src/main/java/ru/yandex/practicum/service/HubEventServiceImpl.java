@@ -48,7 +48,7 @@ public class HubEventServiceImpl implements HubEventService {
 
     @Override
     public void sendActionsByScenario(Scenario scenario) {
-        log.info("==> Send actions by scenario = {}", scenario);
+        log.info("Scenario for execution: id={}, name={}", scenario.getId(), scenario.getName());
         String hubId = scenario.getHubId();
         String scenarioName = scenario.getName();
 
