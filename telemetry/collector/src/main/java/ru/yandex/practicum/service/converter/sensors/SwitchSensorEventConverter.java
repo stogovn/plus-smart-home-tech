@@ -15,7 +15,7 @@ public class SwitchSensorEventConverter extends EventConverter<SwitchSensorEvent
         return SensorEventAvro.newBuilder()
                 .setId(event.getId())
                 .setHubId(event.getHubId())
-                .setTimestamp(event.getTimestamp().toEpochMilli())
+                .setTimestamp(event.getTimestamp())
                 .setPayload(switchAvro)
                 .build();
     }
