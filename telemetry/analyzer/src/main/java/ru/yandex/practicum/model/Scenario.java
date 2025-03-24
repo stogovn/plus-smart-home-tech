@@ -17,7 +17,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 
 import java.util.Map;
@@ -26,7 +25,6 @@ import java.util.Map;
 @Table(name = "scenarios")
 @Getter
 @Setter
-@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -40,7 +38,6 @@ public class Scenario {
 
     String name;
 
-    @ToString.Exclude
     @MapKeyColumn(name = "sensor_id")
     @JoinTable(name = "scenario_conditions",
             joinColumns = @JoinColumn(name = "scenario_id"),
@@ -49,7 +46,6 @@ public class Scenario {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     Map<String, Condition> conditions;
 
-    @ToString.Exclude
     @MapKeyColumn(name = "sensor_id")
     @JoinTable(name = "scenario_actions",
             joinColumns = @JoinColumn(name = "scenario_id"),
