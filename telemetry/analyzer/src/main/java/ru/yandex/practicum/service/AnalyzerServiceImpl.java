@@ -45,11 +45,19 @@ public class AnalyzerServiceImpl implements AnalyzerService {
 
         List<Scenario> scenarios = scenarioRepository.findByHubId(sensorsSnapshotAvro.getHubId());
         Map<String, SensorStateAvro> sensorStates = sensorsSnapshotAvro.getSensorsState();
-        log.info("scenarios in repository count {} ", scenarios.size());
+        log.info("scenarios in repository count {} for hubId={}", scenarios.size(), sensorsSnapshotAvro.getHubId());
 
-        return scenarios.stream()
-                .filter(scenario -> checkConditions(scenario.getConditions(), sensorStates))
+        List<Scenario> filteredScenarios = scenarios.stream()
+                .filter(scenario -> {
+                    log.debug("Checking scenario: id={}, name={}", scenario.getId(), scenario.getName());
+                    boolean conditionsOk = checkConditions(scenario.getConditions(), sensorStates);
+                    log.debug("Scenario id={} conditions evaluation result: {}", scenario.getId(), conditionsOk);
+                    return conditionsOk;
+                })
                 .toList();
+
+        log.info("After filtering, {} scenarios remain for hubId={}", filteredScenarios.size(), sensorsSnapshotAvro.getHubId());
+        return filteredScenarios;
     }
 
     private boolean checkConditions(Map<String, Condition> conditions, Map<String, SensorStateAvro> sensorStates) {
